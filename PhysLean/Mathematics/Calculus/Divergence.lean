@@ -159,12 +159,53 @@ lemma ContinuousLinearMap.smulRight_toLinearMap {M₁ : Type*} [TopologicalSpace
     (↑(ContinuousLinearMap.smulRight c f) : M₁ →ₗ[R] M₂) =
       LinearMap.smulRight (↑c : M₁ →ₗ[R] S) f :=
   rfl
+local notation "⟪" x ", " y "⟫" => inner 𝕜 x y
 
-open InnerProductSpace' in
+
 lemma divergence_smul [InnerProductSpace' 𝕜 E] {f : E → 𝕜} {g : E → E} {x : E}
     (hf : DifferentiableAt 𝕜 f x) (hg : DifferentiableAt 𝕜 g x)
     [FiniteDimensional 𝕜 E] :
     divergence 𝕜 (fun x => f x • g x) x
-    = f x * divergence 𝕜 g x + ⟪adjFDeriv 𝕜 f x 1, g x⟫_𝕜 := by
-  haveI : CompleteSpace E := FiniteDimensional.complete 𝕜 E
-  simp [divergence, fderiv_fun_smul hf hg, hf.hasAdjFDerivAt.hasAdjoint_fderiv.adjoint_inner_left]
+    = f x * divergence 𝕜 g x + ⟪adjFDeriv 𝕜 f x 1, g x⟫ := by
+  unfold divergence
+  simp [fderiv_fun_smul hf hg]
+  obtain ⟨s, b⟩ := Basis.exists_basis 𝕜 E
+  let basis := Classical.choice b
+  have s_fin : Fintype s := FiniteDimensional.fintypeBasisIndex basis
+  have h_basis : Basis (↑s) 𝕜 E = Basis s.toFinset 𝕜 E := by
+    simp only [Set.mem_toFinset]
+  rw [h_basis] at basis
+  rw [LinearMap.trace_eq_matrix_trace_of_finset (s := s.toFinset) _ basis]
+  simp only [Matrix.trace, Matrix.diag, LinearMap.toMatrix]
+  simp_all only [Set.mem_toFinset, Finset.univ_eq_attach, LinearEquiv.trans_apply, LinearMap.toMatrix'_apply,
+    LinearEquiv.arrowCongr_apply, Basis.equivFun_symm_apply, ite_smul, one_smul, zero_smul, Finset.sum_ite_eq',
+    ↓reduceIte, ContinuousLinearMap.coe_coe, ContinuousLinearMap.smulRight_apply, map_smul, Basis.equivFun_apply,
+    Pi.smul_apply, smul_eq_mul]
+  -- comes from aesop, clean up
+  rw [adjFDeriv]
+  have h₁ : ⟪adjoint 𝕜 (⇑(fderiv 𝕜 f x)) 1, g x⟫ = (fderiv 𝕜 f x)  (g x):= by
+    rw [HasAdjoint.adjoint_inner_left]
+    · simp_all only [RCLike.inner_apply, map_one, mul_one]
+      rfl
+    ·
+  rw [h₁]
+  have hg_sum : g x = ∑ x_1 ∈ s.toFinset.attach, (basis.repr (g x) x_1) • basis x_1 := by
+    exact Eq.symm (basis.sum_repr (g x))
+  calc
+    ∑ x_1 ∈ s.toFinset.attach, (fderiv 𝕜 f x) (basis x_1) * (basis.repr (g x)) x_1
+      = ∑ x_1 ∈  s.toFinset.attach, (fderiv 𝕜 f x) ((basis.repr (g x) x_1) • basis x_1) := by
+        refine Finset.sum_congr rfl (fun i hi => ?_)
+        calc
+          (fderiv 𝕜 f x) (basis i) * (basis.repr (g x) i) =
+            (basis.repr (g x) i) * (fderiv 𝕜 f x) (basis i) := by
+            exact mul_comm _ _
+          _ = (fderiv 𝕜 f x) ((basis.repr (g x) i) • basis i) := by
+            rw [map_smul]
+            rfl
+    _ = (fderiv 𝕜 f x) (∑ x_1 ∈ s.toFinset.attach, (basis.repr (g x) x_1) • basis x_1) := by
+      rw [map_sum]
+    _ = (fderiv 𝕜 f x) (g x) := by
+      rw [hg_sum]
+      apply congrArg (fderiv 𝕜 f x)
+      simp only [← hg_sum]
+
