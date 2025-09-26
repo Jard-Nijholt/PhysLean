@@ -159,8 +159,8 @@ lemma ContinuousLinearMap.smulRight_toLinearMap {M₁ : Type*} [TopologicalSpace
     (↑(ContinuousLinearMap.smulRight c f) : M₁ →ₗ[R] M₂) =
       LinearMap.smulRight (↑c : M₁ →ₗ[R] S) f :=
   rfl
-local notation "⟪" x ", " y "⟫" => inner 𝕜 x y
 
+local notation "⟪" x ", " y "⟫" => inner 𝕜 x y
 
 lemma divergence_smul [InnerProductSpace' 𝕜 E] {f : E → 𝕜} {g : E → E} {x : E}
     (hf : DifferentiableAt 𝕜 f x) (hg : DifferentiableAt 𝕜 g x)
@@ -187,7 +187,8 @@ lemma divergence_smul [InnerProductSpace' 𝕜 E] {f : E → 𝕜} {g : E → E}
     rw [HasAdjoint.adjoint_inner_left]
     · simp_all only [RCLike.inner_apply, map_one, mul_one]
       rfl
-    ·
+    · haveI : CompleteSpace E := FiniteDimensional.complete 𝕜 E
+      apply hf.hasAdjFDerivAt.hasAdjoint_fderiv
   rw [h₁]
   have hg_sum : g x = ∑ x_1 ∈ s.toFinset.attach, (basis.repr (g x) x_1) • basis x_1 := by
     exact Eq.symm (basis.sum_repr (g x))
@@ -208,4 +209,3 @@ lemma divergence_smul [InnerProductSpace' 𝕜 E] {f : E → 𝕜} {g : E → E}
       rw [hg_sum]
       apply congrArg (fderiv 𝕜 f x)
       simp only [← hg_sum]
-
