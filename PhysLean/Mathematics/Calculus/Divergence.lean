@@ -209,3 +209,19 @@ lemma divergence_smul [InnerProductSpace' 𝕜 E] {f : E → 𝕜} {g : E → E}
       rw [hg_sum]
       apply congrArg (fderiv 𝕜 f x)
       simp only [← hg_sum]
+
+lemma divergence_smul_2 [InnerProductSpace' 𝕜 E] {f : E → 𝕜} {g : E → E} {x : E}
+    (hf : DifferentiableAt 𝕜 f x) (hg : DifferentiableAt 𝕜 g x)
+    [FiniteDimensional 𝕜 E] :
+    divergence 𝕜 (fun x => f x • g x) x
+    = f x * divergence 𝕜 g x + ⟪adjFDeriv 𝕜 f x 1, g x⟫ := by
+  unfold divergence
+  simp [fderiv_fun_smul hf hg]
+  rw [adjFDeriv]
+  have h₁ : ⟪adjoint 𝕜 (⇑(fderiv 𝕜 f x)) 1, g x⟫ = (fderiv 𝕜 f x)  (g x):= by
+    rw [HasAdjoint.adjoint_inner_left]
+    · simp_all only [RCLike.inner_apply, map_one, mul_one]
+      rfl
+    · haveI : CompleteSpace E := FiniteDimensional.complete 𝕜 E
+      apply hf.hasAdjFDerivAt.hasAdjoint_fderiv
+  rw [h₁]
